@@ -1,0 +1,199 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  SUPER_ADMIN
+  REGIONAL_MANAGER
+  SALES_EXECUTIVE
+  DISPATCH
+  ACCOUNTS
+}
+
+enum OrderStatus {
+  PENDING
+  PRODUCTION
+  READY
+  DISPATCHED
+  DELIVERED
+  CANCELLED
+}
+
+enum ActivityType {
+  NOTE
+  CALL
+  EMAIL
+  MEETING
+  TASK
+}
+
+enum ClientStatus {
+  ACTIVE
+  INACTIVE
+  BLACKLISTED
+}
+
+model User {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email     String    @unique
+  name      String?
+  role      Role      @default(SALES_EXECUTIVE)
+  regionId  String?   @db.Uuid
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  region Region? @relation(fields: [regionId], references: [id])
+
+  // Audit and Assignment relations
+  createdClients  Client[] @relation("ClientCreator")
+  updatedClients  Client[] @relation("ClientUpdater")
+  assignedClients Client[] @relation("ClientAssignee")
+
+  createdLeads  Lead[] @relation("LeadCreator")
+  updatedLeads  Lead[] @relation("LeadUpdater")
+  assignedLeads Lead[] @relation("LeadAssignee")
+
+  createdOrders  Order[] @relation("OrderCreator")
+  updatedOrders  Order[] @relation("OrderUpdater")
+  assignedOrders Order[] @relation("OrderAssignee")
+
+  createdActivities Activity[] @relation("ActivityCreator")
+  updatedActivities Activity[] @relation("ActivityUpdater")
+
+  notifications Notification[]
+}
+
+model Region {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  users   User[]
+  clients Client[]
+}
+
+model Client {
+  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  companyName   String
+  contactPerson String?
+  email         String?
+  phone         String?
+  gstNumber     String?      @unique
+  address       String?
+  regionId      String?      @db.Uuid
+  paymentTerms  String?
+  status        ClientStatus @default(ACTIVE)
+  assignedToId  String?      @db.Uuid
+  createdById   String?      @db.Uuid
+  updatedById   String?      @db.Uuid
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  deletedAt     DateTime?
+
+  region     Region? @relation(fields: [regionId], references: [id])
+  assignedTo User?   @relation("ClientAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdBy  User?   @relation("ClientCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy  User?   @relation("ClientUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  leads      Lead[]
+  orders     Order[]
+  activities Activity[]
+}
+
+model PipelineStage {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String    @unique
+  order     Int       @default(0)
+  color     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  leads Lead[]
+}
+
+model Lead {
+  id            String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title         String
+  expectedValue Float?
+  clientId      String    @db.Uuid
+  assignedToId  String?   @db.Uuid
+  stageId       String    @db.Uuid
+  createdById   String?   @db.Uuid
+  updatedById   String?   @db.Uuid
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  deletedAt     DateTime?
+
+  client     Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  assignedTo User?         @relation("LeadAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdBy  User?         @relation("LeadCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy  User?         @relation("LeadUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+  stage      PipelineStage @relation(fields: [stageId], references: [id], onDelete: Restrict)
+
+  orders     Order[]
+  activities Activity[]
+}
+
+model Order {
+  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderNumber  String      @unique @default(dbgenerated("substr(md5(random()::text), 0, 8)"))
+  totalAmount  Float
+  status       OrderStatus @default(PENDING)
+  leadId       String?     @db.Uuid
+  clientId     String      @db.Uuid
+  assignedToId String?     @db.Uuid
+  createdById  String?     @db.Uuid
+  updatedById  String?     @db.Uuid
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  deletedAt    DateTime?
+
+  lead       Lead?  @relation(fields: [leadId], references: [id], onDelete: SetNull)
+  client     Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  assignedTo User?  @relation("OrderAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+  createdBy  User?  @relation("OrderCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  updatedBy  User?  @relation("OrderUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  activities Activity[]
+}
+
+model Activity {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type        ActivityType @default(NOTE)
+  description String
+  clientId    String?      @db.Uuid
+  leadId      String?      @db.Uuid
+  orderId     String?      @db.Uuid
+  createdById String       @db.Uuid
+  updatedById String?      @db.Uuid
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  deletedAt   DateTime?
+
+  client Client? @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  lead   Lead?   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  order  Order?  @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  createdBy User  @relation("ActivityCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  updatedBy User? @relation("ActivityUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
+}
+
+model Notification {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @db.Uuid
+  message   String
+  isRead    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}

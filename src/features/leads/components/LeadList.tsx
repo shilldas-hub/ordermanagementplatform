@@ -14,7 +14,7 @@ import { LeadForm } from './LeadForm';
 import { LeadsKanban } from './LeadsKanban';
 import { createLead, updateLead, deleteLead } from '../actions';
 import { LeadFormValues } from '../schema';
-import { LeadPriority, LeadSource } from '@prisma/client';
+
 
 interface LeadListProps {
   initialLeads: any[];

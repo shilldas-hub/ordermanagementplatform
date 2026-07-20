@@ -10,7 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
-import { LeadPriority, LeadSource } from "@prisma/client";
+
 
 interface LeadFormProps {
   initialData?: Partial<LeadFormValues>;
@@ -31,8 +31,8 @@ export function LeadForm({ initialData, onSubmit, clients, stages, users, region
       id: initialData?.id || undefined,
       title: initialData?.title || "",
       expectedValue: initialData?.expectedValue || null,
-      priority: initialData?.priority || LeadPriority.MEDIUM,
-      source: initialData?.source || LeadSource.OTHER,
+      priority: initialData?.priority || "MEDIUM",
+      source: initialData?.source || "OTHER",
       expectedClosingDate: initialData?.expectedClosingDate ? new Date(initialData.expectedClosingDate) : null,
       description: initialData?.description || "",
       clientId: initialData?.clientId || "",

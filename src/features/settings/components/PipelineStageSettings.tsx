@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createPipelineStage, updatePipelineStage, deletePipelineStage } from '../actions';
 import { Trash2, Edit, Plus, GripVertical } from 'lucide-react';
-import { PipelineStage } from '@prisma/client';
+import type { PipelineStage } from '@prisma/client';
 
 export function PipelineStageSettings({ initialStages }: { initialStages: PipelineStage[] }) {
   const [stages, setStages] = useState(initialStages);

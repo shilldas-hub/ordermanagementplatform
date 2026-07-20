@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { TrendingUp, TrendingDown, DollarSign, Plus } from 'lucide-react';
-import { FinancialRecord } from '@prisma/client';
+import type { FinancialRecord } from '@prisma/client';
 
 export function FinancialDashboard({ initialRecords }: { initialRecords: FinancialRecord[] }) {
   const [records, setRecords] = useState(initialRecords);

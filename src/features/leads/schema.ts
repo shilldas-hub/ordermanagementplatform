@@ -1,12 +1,11 @@
 import { z } from "zod";
-import { LeadPriority, LeadSource } from "@prisma/client";
 
 export const leadSchema = z.object({
   id: z.string().optional(),
   title: z.string().min(2, "Title is required"),
   expectedValue: z.number().min(0, "Expected value must be positive").optional().nullable(),
-  priority: z.nativeEnum(LeadPriority).default(LeadPriority.MEDIUM),
-  source: z.nativeEnum(LeadSource).default(LeadSource.OTHER),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH"]).default("MEDIUM"),
+  source: z.enum(["WEBSITE", "REFERRAL", "COLD_CALL", "EXISTING_CLIENT", "OTHER"]).default("OTHER"),
   expectedClosingDate: z.date().optional().nullable(),
   description: z.string().optional().nullable(),
   clientId: z.string().min(1, "Client is required"),

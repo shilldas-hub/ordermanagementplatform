@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Check, X, Link as LinkIcon, Database } from 'lucide-react';
-import { MappingStatus } from '@prisma/client';
+
 
 export function MappingDashboard({ initialMappings, clients }: { initialMappings: any[], clients: any[] }) {
   const [mappings, setMappings] = useState(initialMappings);
@@ -21,7 +21,7 @@ export function MappingDashboard({ initialMappings, clients }: { initialMappings
     setIsLoading(true);
     const res = await approveClientMapping(mappingId, unifiedId);
     if (res.success) {
-      setMappings(mappings.map(m => m.id === mappingId ? { ...m, status: MappingStatus.MAPPED, unifiedClientId: unifiedId } : m));
+      setMappings(mappings.map(m => m.id === mappingId ? { ...m, status: "MAPPED", unifiedClientId: unifiedId } : m));
     }
     setIsLoading(false);
   };
@@ -30,12 +30,12 @@ export function MappingDashboard({ initialMappings, clients }: { initialMappings
     setIsLoading(true);
     const res = await rejectClientMapping(mappingId);
     if (res.success) {
-      setMappings(mappings.map(m => m.id === mappingId ? { ...m, status: MappingStatus.CONFLICT, unifiedClientId: null } : m));
+      setMappings(mappings.map(m => m.id === mappingId ? { ...m, status: "REJECTED", unifiedClientId: null } : m));
     }
     setIsLoading(false);
   };
 
-  const getStatusBadge = (status: MappingStatus) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
       case 'PENDING': return <Badge variant="outline" className="text-amber-600 bg-amber-50">Pending Review</Badge>;
       case 'MAPPED': return <Badge variant="outline" className="text-green-600 bg-green-50">Mapped</Badge>;

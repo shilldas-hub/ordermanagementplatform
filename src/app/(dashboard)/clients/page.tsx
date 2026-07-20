@@ -5,19 +5,14 @@ import { ClientList } from '@/features/clients/components/ClientList';
 export default async function ClientsPage({
   searchParams,
 }: {
-  searchParams: { q?: string; region?: string };
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>
 }) {
-  const query = searchParams.q || "";
-  const region = searchParams.region || "all";
+  const resolvedParams = await searchParams;
+  const query = (resolvedParams?.q as string) || "";
+  const region = (resolvedParams?.region as string) || "all";
   
-  // Await the searchParams in Next.js 15 (App Router sometimes expects searchParams to be awaited, but it's a prop. Actually in Next 15, searchParams is a Promise.)
-  // Wait, Next 15 requires searchParams to be a Promise if it's dynamic, let's cast or await if needed, but for now we can just use it.
-  // Let's assume standard Next 14/15 behavior where searchParams is an object, but in Next 15 it's a Promise that needs to be awaited.
-  // Actually, to be safe for Next 15:
-  // const resolvedParams = await searchParams;
-  // const query = resolvedParams.q || "";
-
   const clients = await getClients(query, region);
+  console.log("Total clients fetched for UI:", clients.length);
 
   return (
     <div className="w-full space-y-6">

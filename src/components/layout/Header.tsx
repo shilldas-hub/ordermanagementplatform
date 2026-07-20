@@ -16,27 +16,28 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Sheet, SheetContent, SheetTrigger, SheetTitle, SheetDescription } from '@/components/ui/sheet';
 import { Sidebar } from './Sidebar';
+import { logout } from '@/features/auth/actions';
 
-export function Header() {
+interface HeaderProps {
+  user?: { name: string | null; email: string; role: string } | null;
+}
+
+export function Header({ user }: HeaderProps) {
   const { setTheme } = useTheme();
 
   return (
     <header className="h-16 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950 flex items-center justify-between px-6 sticky top-0 z-10">
       <div className="md:hidden flex items-center">
         <Sheet>
-          <SheetTrigger asChild>
-            <Button variant="ghost" size="icon" className="-ml-2">
-              <Menu className="h-5 w-5" />
-              <span className="sr-only">Toggle Sidebar</span>
-            </Button>
+          <SheetTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 h-9 w-9 -ml-2">
+            <Menu className="h-5 w-5" />
+            <span className="sr-only">Toggle Sidebar</span>
           </SheetTrigger>
           <SheetContent side="left" className="p-0 w-64">
-            {/* Provide Title/Description for screen readers to avoid Dialog warnings */}
             <div className="sr-only">
               <SheetTitle>Navigation Menu</SheetTitle>
               <SheetDescription>Access pages and settings</SheetDescription>
             </div>
-            {/* The Sidebar internally handles its own styling, but we might need to adjust it for the sheet. For now, rendering it directly works if we override the hidden class. */}
             <div className="flex md:hidden h-full">
                <Sidebar />
             </div>
@@ -54,12 +55,10 @@ export function Header() {
         </Button>
 
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon">
-              <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              <span className="sr-only">Toggle theme</span>
-            </Button>
+          <DropdownMenuTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-50 h-9 w-9 outline-none">
+            <Sun className="h-5 w-5 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+            <Moon className="absolute h-5 w-5 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            <span className="sr-only">Toggle theme</span>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
             <DropdownMenuItem onClick={() => setTheme("light")}>Light</DropdownMenuItem>
@@ -69,28 +68,29 @@ export function Header() {
         </DropdownMenu>
 
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src="/avatars/01.png" alt="@johndoe" />
-                <AvatarFallback>JD</AvatarFallback>
-              </Avatar>
-            </Button>
+          <DropdownMenuTrigger className="relative h-8 w-8 rounded-full outline-none ring-2 ring-transparent focus-visible:ring-zinc-400">
+            <Avatar className="h-8 w-8">
+              <AvatarImage src={`https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=random`} alt={user?.name || 'User'} />
+              <AvatarFallback>{user?.name?.substring(0, 2).toUpperCase() || 'U'}</AvatarFallback>
+            </Avatar>
           </DropdownMenuTrigger>
           <DropdownMenuContent className="w-56" align="end" forceMount>
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col space-y-1">
-                <p className="text-sm font-medium leading-none">John Doe</p>
+                <p className="text-sm font-medium leading-none">{user?.name || 'Unknown User'}</p>
                 <p className="text-xs leading-none text-muted-foreground">
-                  john.doe@example.com
+                  {user?.email || 'No email'}
                 </p>
+                <Badge variant="outline" className="mt-2 w-max text-[10px]">
+                  {user?.role}
+                </Badge>
               </div>
             </DropdownMenuLabel>
             <DropdownMenuSeparator />
             <DropdownMenuItem>Profile</DropdownMenuItem>
             <DropdownMenuItem>Settings</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600 dark:text-red-400 cursor-pointer">
+            <DropdownMenuItem className="text-red-600 dark:text-red-400 cursor-pointer" onClick={() => logout()}>
               Log out
             </DropdownMenuItem>
           </DropdownMenuContent>

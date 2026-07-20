@@ -31,9 +31,9 @@ export function Sidebar({ className }: { className?: string }) {
     <aside className={cn("w-64 border-r border-zinc-200 dark:border-zinc-800 h-screen bg-white dark:bg-zinc-950 flex flex-col", className)}>
       <div className="p-6 flex items-center gap-3">
         <div className="w-8 h-8 bg-zinc-900 dark:bg-zinc-100 rounded-md flex items-center justify-center">
-          <span className="text-white dark:text-zinc-900 font-bold text-xl leading-none">M</span>
+          <span className="text-white dark:text-zinc-900 font-bold text-xl leading-none">R</span>
         </div>
-        <h2 className="text-xl font-bold tracking-tight">ManuCRM</h2>
+        <h2 className="text-xl font-bold tracking-tight">RRChemicals CRM</h2>
       </div>
       <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
         {navItems.map((item) => {

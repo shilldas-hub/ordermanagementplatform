@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { ClientFormValues } from '../schema';
 import { ClientForm } from './ClientForm';
 import { createClient, updateClient, deleteClient } from '../actions';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
@@ -47,7 +47,7 @@ export function ClientList({ initialClients }: { initialClients: ClientType[] })
       }
       setIsDialogOpen(false);
       setEditingClient(null);
-      router.refresh(); // Refresh RSC data
+      window.location.reload();
     } catch (error) {
       console.error(error);
     } finally {
@@ -58,7 +58,7 @@ export function ClientList({ initialClients }: { initialClients: ClientType[] })
   const handleDelete = async (id: string) => {
     if (confirm("Are you sure you want to delete this client?")) {
       await deleteClient(id);
-      router.refresh();
+      window.location.reload();
     }
   };
 
@@ -92,11 +92,9 @@ export function ClientList({ initialClients }: { initialClients: ClientType[] })
           setIsDialogOpen(open);
           if (!open) setEditingClient(null);
         }}>
-          <DialogTrigger asChild>
-            <Button className="shrink-0 gap-2">
-              <Plus className="h-4 w-4" />
-              Add Client
-            </Button>
+          <DialogTrigger className={buttonVariants({ className: "shrink-0 gap-2" })}>
+            <Plus className="h-4 w-4" />
+            Add Client
           </DialogTrigger>
           <DialogContent className="sm:max-w-[600px]">
             <DialogHeader>
@@ -128,7 +126,7 @@ export function ClientList({ initialClients }: { initialClients: ClientType[] })
                 <td colSpan={4} className="p-8 text-center text-zinc-500">No clients found.</td>
               </tr>
             ) : initialClients.map((client) => (
-              <tr key={client.id} className="border-b border-zinc-200 dark:border-zinc-800 transition-colors hover:bg-zinc-50 dark:hover:bg-zinc-900/50">
+              <tr key={client.id} className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer" onClick={() => openEdit(client)}>
                 <td className="p-4">
                   <div className="font-medium text-zinc-900 dark:text-zinc-50">{client.companyName}</div>
                   <div className="text-xs text-zinc-500 flex items-center gap-1 mt-1">
@@ -147,12 +145,10 @@ export function ClientList({ initialClients }: { initialClients: ClientType[] })
                     {client.status}
                   </span>
                 </td>
-                <td className="p-4 text-right">
+                <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
                   <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
+                    <DropdownMenuTrigger className={buttonVariants({ variant: "ghost", size: "icon", className: "h-8 w-8" })}>
+                      <MoreVertical className="h-4 w-4" />
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
                       <DropdownMenuItem onClick={() => openEdit(client)}>
@@ -187,10 +183,8 @@ export function ClientList({ initialClients }: { initialClients: ClientType[] })
                   </span>
                 </div>
                 <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon" className="-mr-2 -mt-2">
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
+                  <DropdownMenuTrigger className={buttonVariants({ variant: "ghost", size: "icon", className: "-mr-2 -mt-2" })}>
+                    <MoreVertical className="h-4 w-4" />
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end">
                     <DropdownMenuItem onClick={() => openEdit(client)}>

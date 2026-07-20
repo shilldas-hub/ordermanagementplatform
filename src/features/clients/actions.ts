@@ -4,18 +4,16 @@ import { revalidatePath } from "next/cache";
 import prisma from "@/lib/prisma";
 import { clientSchema, ClientFormValues } from "./schema";
 
-// Mock authentication context for now, since auth is not fully implemented
-// In a real app, you would use Supabase auth to get the user and their role
-const getMockUser = async () => {
-  return await prisma.user.findFirst();
-};
+import { Role } from "@prisma/client";
+
+import { getCurrentUser } from "@/features/auth/utils";
 
 export async function getClients(search: string = "", regionId?: string) {
-  const user = await getMockUser();
+  const user = await getCurrentUser();
   if (!user) throw new Error("Unauthorized");
 
   const whereClause: any = {
-    isDeleted: false,
+    deletedAt: null,
     companyName: {
       contains: search,
       mode: "insensitive",
@@ -47,7 +45,7 @@ export async function getClients(search: string = "", regionId?: string) {
 }
 
 export async function createClient(data: ClientFormValues) {
-  const user = await getMockUser();
+  const user = await getCurrentUser();
   if (!user || user.role === "DISPATCH" || user.role === "ACCOUNTS") {
     return { error: "Unauthorized to create clients" };
   }
@@ -71,7 +69,7 @@ export async function createClient(data: ClientFormValues) {
         regionId: values.regionId || null,
         paymentTerms: values.paymentTerms || null,
         status: values.status,
-        assignedToId: values.assignedToId || null,
+        assignedToId: values.assignedToId || user.id,
         createdById: user.id,
       },
     });
@@ -87,7 +85,7 @@ export async function createClient(data: ClientFormValues) {
 }
 
 export async function updateClient(data: ClientFormValues) {
-  const user = await getMockUser();
+  const user = await getCurrentUser();
   if (!user || user.role === "DISPATCH" || user.role === "ACCOUNTS") {
     return { error: "Unauthorized to edit clients" };
   }
@@ -139,7 +137,7 @@ export async function updateClient(data: ClientFormValues) {
 }
 
 export async function deleteClient(id: string) {
-  const user = await getMockUser();
+  const user = await getCurrentUser();
   if (!user || user.role === "DISPATCH" || user.role === "ACCOUNTS" || user.role === "SALES_EXECUTIVE") {
     // Usually sales executives can't delete clients, only managers or admins.
     // If requirement allows Sales Exec to delete, we can remove the condition.

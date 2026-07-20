@@ -28,7 +28,7 @@ export function OrderForm({
   clients: any[];
 }) {
   const form = useForm<z.infer<typeof formSchema>>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchema) as any,
     defaultValues: {
       clientId: initialData?.clientId || "",
       totalAmount: initialData?.totalAmount || 0,

@@ -13,7 +13,7 @@ export async function getClientMappings() {
 
   return await prisma.clientMapping.findMany({
     include: {
-      unifiedClient: true
+      client: true
     },
     orderBy: { createdAt: "desc" }
   });
@@ -60,7 +60,7 @@ export async function rejectClientMapping(mappingId: string) {
     where: { id: mappingId },
     data: {
       unifiedClientId: null,
-      status: MappingStatus.CONFLICT,
+      status: MappingStatus.IGNORED,
     }
   });
 

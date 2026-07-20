@@ -28,8 +28,7 @@ export async function addManualFinancialRecord(data: { location: string; period:
       revenue: data.revenue,
       expenses: data.expenses,
       profit: data.profit,
-      source: "MANUAL",
-      createdById: user.id
+      source: "MANUAL"
     }
   });
 

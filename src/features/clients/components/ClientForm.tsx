@@ -1,6 +1,6 @@
 "use client";
 
-import React, from 'react';
+import React from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { clientSchema, ClientFormValues } from '../schema';
@@ -24,7 +24,7 @@ interface ClientFormProps {
 
 export function ClientForm({ initialData, onSubmit, isLoading }: ClientFormProps) {
   const form = useForm<ClientFormValues>({
-    resolver: zodResolver(clientSchema),
+    resolver: zodResolver(clientSchema) as any,
     defaultValues: {
       companyName: initialData?.companyName || '',
       contactPerson: initialData?.contactPerson || '',

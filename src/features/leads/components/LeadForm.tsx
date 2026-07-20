@@ -26,7 +26,7 @@ export function LeadForm({ initialData, onSubmit, clients, stages, users, region
   const [error, setError] = useState<string | null>(null);
 
   const form = useForm<LeadFormValues>({
-    resolver: zodResolver(leadSchema),
+    resolver: zodResolver(leadSchema) as any,
     defaultValues: {
       id: initialData?.id || undefined,
       title: initialData?.title || "",

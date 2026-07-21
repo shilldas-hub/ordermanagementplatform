@@ -24,6 +24,7 @@ export function OrderList({ initialOrders = [], clients = [] }: { initialOrders?
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingOrder, setEditingOrder] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const openEdit = (order: any) => {
     setEditingOrder(order);
@@ -32,6 +33,7 @@ export function OrderList({ initialOrders = [], clients = [] }: { initialOrders?
 
   const onSubmit = async (data: any) => {
     setIsLoading(true);
+    setError(null);
     let res;
     if (editingOrder) {
       res = await updateOrder(editingOrder.id, data);
@@ -47,6 +49,8 @@ export function OrderList({ initialOrders = [], clients = [] }: { initialOrders?
       }
       setIsDialogOpen(false);
       setEditingOrder(null);
+    } else {
+      setError(res.error || "An unknown error occurred.");
     }
     setIsLoading(false);
   };
@@ -56,7 +60,18 @@ export function OrderList({ initialOrders = [], clients = [] }: { initialOrders?
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold tracking-tight">Orders</h2>
         
-        <Button onClick={() => { setEditingOrder(null); setIsDialogOpen(true); }} className="gap-2">
+        <Button 
+          onClick={() => {
+            if (!clients || clients.length === 0) {
+              alert("You must create at least one Client before you can create an order!");
+              return;
+            }
+            setEditingOrder(null); 
+            setIsDialogOpen(true); 
+            setError(null);
+          }} 
+          className="gap-2"
+        >
           <Plus className="h-4 w-4" />
           Create Order
         </Button>
@@ -104,7 +119,10 @@ export function OrderList({ initialOrders = [], clients = [] }: { initialOrders?
 
       <Dialog open={isDialogOpen} onOpenChange={(open) => {
         setIsDialogOpen(open);
-        if (!open) setEditingOrder(null);
+        if (!open) {
+          setEditingOrder(null);
+          setError(null);
+        }
       }}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
@@ -115,6 +133,7 @@ export function OrderList({ initialOrders = [], clients = [] }: { initialOrders?
             onSubmit={onSubmit} 
             isLoading={isLoading} 
             clients={clients}
+            error={error}
           />
         </DialogContent>
       </Dialog>

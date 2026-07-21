@@ -26,6 +26,7 @@ export function OrderForm({
   onSubmit: (data: any) => void; 
   isLoading: boolean;
   clients: any[];
+  error?: string | null;
 }) {
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema) as any,
@@ -39,6 +40,11 @@ export function OrderForm({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        {error && (
+          <div className="p-3 bg-red-100 border border-red-200 text-red-600 rounded-md text-sm">
+            {error}
+          </div>
+        )}
         <FormField
           control={form.control}
           name="clientId"
@@ -71,7 +77,12 @@ export function OrderForm({
             <FormItem>
               <FormLabel>Total Amount</FormLabel>
               <FormControl>
-                <Input type="number" step="0.01" {...field} />
+                <Input 
+                  type="number" 
+                  step="0.01" 
+                  {...field} 
+                  onChange={(e) => field.onChange(parseFloat(e.target.value) || 0)} 
+                />
               </FormControl>
               <FormMessage />
             </FormItem>

@@ -9,7 +9,7 @@ export const clientSchema = z.object({
   gstNumber: z.string().optional().or(z.literal("")),
   address: z.string().optional(),
   regionId: z.string().uuid("Region is required").optional().or(z.literal("")),
-  paymentTerms: z.string().optional(),
+
   status: z.enum(["ACTIVE", "INACTIVE", "BLACKLISTED"]).default("ACTIVE"),
   assignedToId: z.string().uuid().optional().or(z.literal("")),
 });

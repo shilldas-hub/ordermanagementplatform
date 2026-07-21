@@ -3,7 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { getLeadDetails } from "@/features/leads/actions";
-import { getPipelineStages } from "@/features/settings/actions";
+import prisma from "@/lib/prisma";
 import { LeadDetails } from "@/features/leads/components/LeadDetails";
 import { Button } from "@/components/ui/button";
 
@@ -12,7 +12,12 @@ export default async function LeadDetailsPage({ params }: { params: Promise<{ id
   
   try {
     const lead = await getLeadDetails(resolvedParams.id);
-    const stages = await getPipelineStages();
+    const [stages, clients, users, regions] = await Promise.all([
+      prisma.pipelineStage.findMany({ where: { deletedAt: null }, select: { id: true, name: true, order: true }, orderBy: { order: 'asc' } }),
+      prisma.client.findMany({ where: { deletedAt: null }, select: { id: true, companyName: true }, orderBy: { companyName: 'asc' } }),
+      prisma.user.findMany({ where: { deletedAt: null }, select: { id: true, name: true }, orderBy: { name: 'asc' } }),
+      prisma.region.findMany({ where: { deletedAt: null }, select: { id: true, name: true }, orderBy: { name: 'asc' } }),
+    ]);
     
     return (
       <div className="w-full space-y-6 max-w-7xl mx-auto">
@@ -28,7 +33,13 @@ export default async function LeadDetailsPage({ params }: { params: Promise<{ id
           </div>
         </div>
         
-        <LeadDetails lead={lead} stages={stages} />
+        <LeadDetails 
+          lead={lead} 
+          stages={stages} 
+          clients={clients} 
+          users={users} 
+          regions={regions} 
+        />
       </div>
     );
   } catch (error) {

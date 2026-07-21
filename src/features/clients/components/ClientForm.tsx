@@ -33,7 +33,6 @@ export function ClientForm({ initialData, onSubmit, isLoading }: ClientFormProps
       gstNumber: initialData?.gstNumber || '',
       address: initialData?.address || '',
       regionId: initialData?.regionId || '',
-      paymentTerms: initialData?.paymentTerms || '',
       status: initialData?.status || 'ACTIVE',
       assignedToId: initialData?.assignedToId || '',
     },
@@ -107,20 +106,6 @@ export function ClientForm({ initialData, onSubmit, isLoading }: ClientFormProps
                 <FormLabel>GST Number</FormLabel>
                 <FormControl>
                   <Input placeholder="22AAAAA0000A1Z5" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="paymentTerms"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Payment Terms</FormLabel>
-                <FormControl>
-                  <Input placeholder="Net 30" {...field} />
                 </FormControl>
                 <FormMessage />
               </FormItem>

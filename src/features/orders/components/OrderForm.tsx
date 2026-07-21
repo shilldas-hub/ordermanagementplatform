@@ -20,7 +20,8 @@ export function OrderForm({
   initialData, 
   onSubmit, 
   isLoading, 
-  clients 
+  clients,
+  error
 }: { 
   initialData?: any; 
   onSubmit: (data: any) => void; 
@@ -51,7 +52,7 @@ export function OrderForm({
           render={({ field }) => (
             <FormItem>
               <FormLabel>Client</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value || undefined}>
+              <Select onValueChange={field.onChange} value={field.value || undefined}>
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="Select client" />

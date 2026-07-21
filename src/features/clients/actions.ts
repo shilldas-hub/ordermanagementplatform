@@ -67,7 +67,7 @@ export async function createClient(data: ClientFormValues) {
         gstNumber: values.gstNumber || null,
         address: values.address || null,
         regionId: values.regionId || null,
-        paymentTerms: values.paymentTerms || null,
+
         status: values.status,
         assignedToId: values.assignedToId || user.id,
         createdById: user.id,
@@ -119,7 +119,7 @@ export async function updateClient(data: ClientFormValues) {
         gstNumber: values.gstNumber || null,
         address: values.address || null,
         regionId: values.regionId || null,
-        paymentTerms: values.paymentTerms || null,
+
         status: values.status,
         assignedToId: values.assignedToId || null,
         updatedById: user.id,

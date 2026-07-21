@@ -4,18 +4,23 @@ import React, { useState } from "react";
 import { format } from "date-fns";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MessageSquare, PhoneCall, Mail, Calendar, CheckCircle2, Clock, MapPin, Building2, UserCircle2, Paperclip, FileText } from "lucide-react";
+import { Edit, MessageSquare, PhoneCall, Mail, Calendar, CheckCircle2, Clock, MapPin, Building2, UserCircle2, Paperclip, FileText } from "lucide-react";
 import { addLeadActivity } from "../actions";
+import { LeadForm } from "./LeadForm";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 
 import { updateLead } from "../actions";
 
 interface LeadDetailsProps {
   lead: any;
   stages?: any[];
+  clients?: any[];
+  users?: any[];
+  regions?: any[];
 }
 
 const activityIcons: Record<string, React.ReactNode> = {
@@ -26,12 +31,13 @@ const activityIcons: Record<string, React.ReactNode> = {
   TASK: <CheckCircle2 className="h-4 w-4 text-red-500" />,
 };
 
-export function LeadDetails({ lead, stages = [] }: LeadDetailsProps) {
+export function LeadDetails({ lead, stages = [], clients = [], users = [], regions = [] }: LeadDetailsProps) {
   const [newActivityDesc, setNewActivityDesc] = useState("");
   const [newActivityType, setNewActivityType] = useState<any>("NOTE");
   const [fileUrl, setFileUrl] = useState("");
   const [fileName, setFileName] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
 
   const handleAddActivity = async () => {
     if (!newActivityDesc.trim()) return;
@@ -49,8 +55,32 @@ export function LeadDetails({ lead, stages = [] }: LeadDetailsProps) {
       {/* Left Column: Lead Info */}
       <div className="lg:col-span-1 space-y-6">
         <Card>
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-lg">Lead Details</CardTitle>
+            <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+              <DialogTrigger className={buttonVariants({ variant: "outline", size: "sm", className: "h-8" })}>
+                <Edit className="h-4 w-4 mr-2" />
+                Edit
+              </DialogTrigger>
+              <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>Edit Lead</DialogTitle>
+                </DialogHeader>
+                <LeadForm
+                  initialData={lead}
+                  stages={stages}
+                  clients={clients}
+                  users={users}
+                  regions={regions}
+                  onSubmit={async (data) => {
+                    await updateLead({ ...data, id: lead.id });
+                    setIsEditDialogOpen(false);
+                    window.location.reload();
+                    return { success: true };
+                  }}
+                />
+              </DialogContent>
+            </Dialog>
           </CardHeader>
           <CardContent className="space-y-4 text-sm">
             <div>
@@ -71,7 +101,7 @@ export function LeadDetails({ lead, stages = [] }: LeadDetailsProps) {
               <span className="text-zinc-500 block mb-1">Pipeline Stage</span>
               {stages.length > 0 ? (
                 <Select 
-                  defaultValue={lead.stageId} 
+                  value={lead.stageId} 
                   onValueChange={async (val) => {
                     await updateLead({ ...lead, stageId: val, clientId: lead.clientId, assignedToId: lead.assignedToId || undefined, expectedValue: lead.expectedValue ? parseFloat(lead.expectedValue) : undefined, priority: lead.priority, source: lead.source });
                     window.location.reload();

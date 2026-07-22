@@ -136,19 +136,45 @@ export async function updateLead(data: LeadFormValues) {
       return { error: "Unauthorized" };
     }
 
+    const changes: string[] = [];
+
+    // Track standard fields
+    if (existing.title !== data.title) changes.push(`Title changed to "${data.title}"`);
+    if (existing.expectedValue !== data.expectedValue) changes.push(`Expected Value changed to ₹${data.expectedValue?.toLocaleString('en-IN')}`);
+    if (existing.priority !== data.priority) changes.push(`Priority changed to ${data.priority}`);
+    if (existing.source !== data.source) changes.push(`Source changed to ${data.source}`);
+    if (existing.description !== data.description) changes.push(`Description updated`);
+    
+    // Check Date
+    const existingDate = existing.expectedClosingDate ? existing.expectedClosingDate.toISOString().split('T')[0] : null;
+    const newDataDate = data.expectedClosingDate ? new Date(data.expectedClosingDate).toISOString().split('T')[0] : null;
+    if (existingDate !== newDataDate) changes.push(`Closing Date changed to ${newDataDate}`);
+
+    // Check Relations
+    if (existing.clientId !== data.clientId) {
+      const client = await prisma.client.findUnique({ where: { id: data.clientId } });
+      changes.push(`Client changed to ${client?.companyName}`);
+    }
+    if (existing.assignedToId !== data.assignedToId) {
+      if (data.assignedToId) {
+        const userAssigned = await prisma.user.findUnique({ where: { id: data.assignedToId } });
+        changes.push(`Assigned to ${userAssigned?.name}`);
+      } else {
+        changes.push(`Unassigned`);
+      }
+    }
+    if (existing.regionId !== data.regionId) {
+      const region = data.regionId ? await prisma.region.findUnique({ where: { id: data.regionId } }) : null;
+      changes.push(`Region changed to ${region?.name || 'None'}`);
+    }
+
     // Check if stage changed to log activity
     if (existing.stageId !== data.stageId) {
       const oldStage = await prisma.pipelineStage.findUnique({ where: { id: existing.stageId } });
       const newStage = await prisma.pipelineStage.findUnique({ where: { id: data.stageId } });
       
-      await prisma.activity.create({
-        data: {
-          type: ActivityType.NOTE,
-          description: `Stage changed from ${oldStage?.name} to ${newStage?.name}`,
-          leadId: data.id,
-          createdById: user.id,
-        }
-      });
+      changes.push(`Stage changed from ${oldStage?.name} to ${newStage?.name}`);
+      
 
       // TRIGGER ORDER WORKFLOW if Stage is "Won"
       if (newStage?.name.toLowerCase().includes('won')) {
@@ -192,6 +218,17 @@ export async function updateLead(data: LeadFormValues) {
       }
     }
 
+    if (changes.length > 0) {
+      await prisma.activity.create({
+        data: {
+          type: "NOTE",
+          description: `Updated fields:\n- ${changes.join('\n- ')}`,
+          leadId: data.id,
+          createdById: user.id,
+        }
+      });
+    }
+
     const { id, ...updateData } = result.data;
     
     const lead = await prisma.lead.update({
@@ -209,6 +246,51 @@ export async function updateLead(data: LeadFormValues) {
   } catch (error: any) {
     console.error("Error updating lead:", error);
     return { error: "Failed to update lead" };
+  }
+}
+
+export async function updateLeadStage(id: string, stageId: string) {
+  const user = await getCurrentUser();
+  if (!user || user.role === "DISPATCH" || user.role === "ACCOUNTS") {
+    return { error: "Unauthorized to edit leads" };
+  }
+
+  try {
+    const existing = await prisma.lead.findUnique({ where: { id } });
+    if (!existing) return { error: "Lead not found" };
+    
+    // RBAC
+    if (user.role === "REGIONAL_MANAGER" && existing.regionId !== user.regionId) return { error: "Unauthorized" };
+    if (user.role === "SALES_EXECUTIVE" && existing.assignedToId !== user.id) return { error: "Unauthorized" };
+
+    if (existing.stageId === stageId) return { success: true, lead: existing };
+
+    const oldStage = await prisma.pipelineStage.findUnique({ where: { id: existing.stageId } });
+    const newStage = await prisma.pipelineStage.findUnique({ where: { id: stageId } });
+
+    // Activity log
+    await prisma.activity.create({
+      data: {
+        type: "NOTE",
+        description: `Stage changed from ${oldStage?.name} to ${newStage?.name} via Kanban`,
+        leadId: id,
+        createdById: user.id,
+      }
+    });
+
+    const lead = await prisma.lead.update({
+      where: { id },
+      data: {
+        stageId,
+        updatedById: user.id,
+      },
+    });
+
+    revalidatePath("/leads");
+    return { success: true, lead };
+  } catch (error: any) {
+    console.error("Error updating lead stage:", error);
+    return { error: "Failed to update lead stage" };
   }
 }
 

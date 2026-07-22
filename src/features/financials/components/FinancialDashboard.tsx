@@ -1,158 +1,164 @@
 "use client";
 
-import React, { useState } from 'react';
-import { addManualFinancialRecord } from '../actions';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Badge } from '@/components/ui/badge';
+import React, { useMemo } from 'react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { DollarSign, TrendingUp, TrendingDown, Activity } from 'lucide-react';
 import { format } from 'date-fns';
-import { TrendingUp, TrendingDown, DollarSign, Plus } from 'lucide-react';
 import type { FinancialRecord } from '@prisma/client';
 
-export function FinancialDashboard({ initialRecords }: { initialRecords: FinancialRecord[] }) {
-  const [records, setRecords] = useState(initialRecords);
-  const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
+const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
-  const [formData, setFormData] = useState({
-    location: '',
-    period: format(new Date(), 'yyyy-MM'),
-    revenue: '',
-    expenses: ''
-  });
+export function FinancialDashboard({ records }: { records: FinancialRecord[] }) {
+  const kpis = useMemo(() => {
+    let totalRevenue = 0;
+    let totalExpenses = 0;
+    records.forEach(r => {
+      totalRevenue += r.revenue;
+      totalExpenses += r.expenses;
+    });
+    const totalProfit = totalRevenue - totalExpenses;
+    const avgMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
 
-  const totalRevenue = records.reduce((acc, r) => acc + r.revenue, 0);
-  const totalExpenses = records.reduce((acc, r) => acc + r.expenses, 0);
-  const totalProfit = records.reduce((acc, r) => acc + r.profit, 0);
+    return { totalRevenue, totalExpenses, totalProfit, avgMargin };
+  }, [records]);
 
-  const handleManualAdd = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-
-    const revenue = parseFloat(formData.revenue);
-    const expenses = parseFloat(formData.expenses);
-    const profit = revenue - expenses;
-
-    const res = await addManualFinancialRecord({
-      location: formData.location,
-      period: formData.period + "-01", // Append day for Date parsing
-      revenue,
-      expenses,
-      profit
+  const monthlyData = useMemo(() => {
+    const map = new Map<string, { month: string; revenue: number; expenses: number; profit: number }>();
+    
+    // Sort by period
+    const sorted = [...records].sort((a, b) => new Date(a.period).getTime() - new Date(b.period).getTime());
+    
+    sorted.forEach(r => {
+      const monthStr = format(new Date(r.period), 'MMM yyyy');
+      if (!map.has(monthStr)) {
+        map.set(monthStr, { month: monthStr, revenue: 0, expenses: 0, profit: 0 });
+      }
+      const data = map.get(monthStr)!;
+      data.revenue += r.revenue;
+      data.expenses += r.expenses;
+      data.profit += r.profit;
     });
 
-    if (res.success && res.record) {
-      setRecords([res.record, ...records].sort((a, b) => new Date(b.period).getTime() - new Date(a.period).getTime()));
-      setIsDialogOpen(false);
-      setFormData({ location: '', period: format(new Date(), 'yyyy-MM'), revenue: '', expenses: '' });
-    }
-    
-    setIsLoading(false);
-  };
+    return Array.from(map.values());
+  }, [records]);
+
+  const regionalData = useMemo(() => {
+    const map = new Map<string, number>();
+    records.forEach(r => {
+      map.set(r.location, (map.get(r.location) || 0) + r.revenue);
+    });
+    return Array.from(map.entries()).map(([name, value]) => ({ name, value })).sort((a, b) => b.value - a.value);
+  }, [records]);
+
+  if (records.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-64 border-2 border-dashed border-zinc-200 dark:border-zinc-800 rounded-xl bg-zinc-50/50 dark:bg-zinc-900/50">
+        <Activity className="h-10 w-10 text-zinc-400 mb-4" />
+        <h3 className="text-lg font-medium text-zinc-900 dark:text-zinc-100">No Financial Data</h3>
+        <p className="text-zinc-500 text-sm mt-1">Add manual records or wait for the ERP sync to populate the dashboard.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <Card className="bg-zinc-50 dark:bg-zinc-900/50">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-zinc-500">Total Revenue</p>
-              <DollarSign className="h-5 w-5 text-zinc-400" />
-            </div>
-            <p className="text-3xl font-bold">₹{totalRevenue.toLocaleString('en-IN')}</p>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-zinc-500">Total Revenue</CardTitle>
+            <DollarSign className="h-4 w-4 text-blue-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">₹{kpis.totalRevenue.toLocaleString('en-IN')}</div>
           </CardContent>
         </Card>
         <Card className="bg-zinc-50 dark:bg-zinc-900/50">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-zinc-500">Total Expenses</p>
-              <TrendingDown className="h-5 w-5 text-red-400" />
-            </div>
-            <p className="text-3xl font-bold">₹{totalExpenses.toLocaleString('en-IN')}</p>
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-zinc-500">Total Expenses</CardTitle>
+            <TrendingDown className="h-4 w-4 text-red-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">₹{kpis.totalExpenses.toLocaleString('en-IN')}</div>
           </CardContent>
         </Card>
-        <Card className="bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-900/30">
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-green-600">Net Profit</p>
-              <TrendingUp className="h-5 w-5 text-green-500" />
+        <Card className="bg-zinc-50 dark:bg-zinc-900/50">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-zinc-500">Total Profit</CardTitle>
+            <TrendingUp className="h-4 w-4 text-green-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold text-green-600 dark:text-green-500">
+              ₹{kpis.totalProfit.toLocaleString('en-IN')}
             </div>
-            <p className="text-3xl font-bold text-green-700 dark:text-green-500">₹{totalProfit.toLocaleString('en-IN')}</p>
+          </CardContent>
+        </Card>
+        <Card className="bg-zinc-50 dark:bg-zinc-900/50">
+          <CardHeader className="flex flex-row items-center justify-between pb-2">
+            <CardTitle className="text-sm font-medium text-zinc-500">Avg Margin</CardTitle>
+            <Activity className="h-4 w-4 text-purple-500" />
+          </CardHeader>
+          <CardContent>
+            <div className="text-2xl font-bold">{kpis.avgMargin.toFixed(1)}%</div>
           </CardContent>
         </Card>
       </div>
 
-      <div className="flex justify-between items-center">
-        <h3 className="text-lg font-medium tracking-tight">Consolidated Location Data</h3>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-9 px-3">
-            <Plus className="h-4 w-4 mr-2" /> Manual Entry
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Add Manual Financial Record</DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleManualAdd} className="space-y-4 pt-4">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Location</label>
-                <Input required placeholder="e.g. Hyderabad Branch" value={formData.location} onChange={e => setFormData({...formData, location: e.target.value})} />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Period (Month)</label>
-                <Input required type="month" value={formData.period} onChange={e => setFormData({...formData, period: e.target.value})} />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Revenue (₹)</label>
-                  <Input required type="number" min="0" value={formData.revenue} onChange={e => setFormData({...formData, revenue: e.target.value})} />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Expenses (₹)</label>
-                  <Input required type="number" min="0" value={formData.expenses} onChange={e => setFormData({...formData, expenses: e.target.value})} />
-                </div>
-              </div>
-              <Button type="submit" className="w-full" disabled={isLoading}>Save Record</Button>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <Card className="lg:col-span-2">
+          <CardHeader>
+            <CardTitle>Revenue vs Expenses (Monthly)</CardTitle>
+            <CardDescription>Consolidated P&L trends across all regions.</CardDescription>
+          </CardHeader>
+          <CardContent className="h-80">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={monthlyData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#888" opacity={0.2} />
+                <XAxis dataKey="month" tickLine={false} axisLine={false} />
+                <YAxis tickFormatter={(val) => `₹${(val / 100000).toFixed(1)}L`} tickLine={false} axisLine={false} />
+                <Tooltip 
+                  formatter={(value: number) => `₹${value.toLocaleString('en-IN')}`}
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                />
+                <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
+                <Bar dataKey="revenue" name="Revenue" fill="#3b82f6" radius={[4, 4, 0, 0]} />
+                <Bar dataKey="expenses" name="Expenses" fill="#f43f5e" radius={[4, 4, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
 
-      <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-sm overflow-hidden">
-        <table className="w-full text-sm text-left">
-          <thead className="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-500 border-b border-zinc-200 dark:border-zinc-800">
-            <tr>
-              <th className="p-4 font-medium">Period</th>
-              <th className="p-4 font-medium">Location</th>
-              <th className="p-4 font-medium text-right">Revenue</th>
-              <th className="p-4 font-medium text-right">Expenses</th>
-              <th className="p-4 font-medium text-right">Profit</th>
-              <th className="p-4 font-medium">Source</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-            {records.map((record) => (
-              <tr key={record.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50">
-                <td className="p-4 font-medium">{format(new Date(record.period), 'MMMM yyyy')}</td>
-                <td className="p-4">{record.location}</td>
-                <td className="p-4 text-right text-zinc-900 dark:text-zinc-100">₹{record.revenue.toLocaleString('en-IN')}</td>
-                <td className="p-4 text-right text-red-600 dark:text-red-400">₹{record.expenses.toLocaleString('en-IN')}</td>
-                <td className="p-4 text-right font-semibold text-green-600 dark:text-green-500">₹{record.profit.toLocaleString('en-IN')}</td>
-                <td className="p-4">
-                  <Badge variant="outline" className={record.source === 'API' ? 'bg-blue-50 text-blue-700' : 'bg-purple-50 text-purple-700'}>
-                    {record.source}
-                  </Badge>
-                </td>
-              </tr>
-            ))}
-            {records.length === 0 && (
-              <tr>
-                <td colSpan={6} className="p-8 text-center text-zinc-500">No financial records found.</td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+        <Card>
+          <CardHeader>
+            <CardTitle>Revenue by Region</CardTitle>
+            <CardDescription>Top performing locations.</CardDescription>
+          </CardHeader>
+          <CardContent className="h-80 flex flex-col justify-center">
+            <ResponsiveContainer width="100%" height="100%">
+              <PieChart>
+                <Pie
+                  data={regionalData}
+                  cx="50%"
+                  cy="50%"
+                  innerRadius={60}
+                  outerRadius={80}
+                  paddingAngle={5}
+                  dataKey="value"
+                  stroke="none"
+                >
+                  {regionalData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                  ))}
+                </Pie>
+                <Tooltip 
+                  formatter={(value: number) => `₹${value.toLocaleString('en-IN')}`} 
+                  contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
+                />
+                <Legend iconType="circle" />
+              </PieChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

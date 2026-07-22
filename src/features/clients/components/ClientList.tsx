@@ -12,6 +12,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Search, Plus, MapPin, Mail, Phone, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
@@ -28,6 +35,23 @@ export function ClientList({ initialClients }: { initialClients: ClientType[] })
   const [editingClient, setEditingClient] = useState<ClientType | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState(searchParams.get("q") || "");
+  const [sortBy, setSortBy] = useState("NEWEST");
+  const [filterStatus, setFilterStatus] = useState("ALL");
+
+  const filteredAndSortedClients = React.useMemo(() => {
+    let result = [...initialClients];
+    if (filterStatus !== "ALL") {
+      result = result.filter(c => c.status === filterStatus);
+    }
+    result.sort((a, b) => {
+      if (sortBy === "COMPANY_ASC") return (a.companyName || "").localeCompare(b.companyName || "");
+      if (sortBy === "COMPANY_DESC") return (b.companyName || "").localeCompare(a.companyName || "");
+      if (sortBy === "NEWEST") return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+      if (sortBy === "OLDEST") return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+      return 0;
+    });
+    return result;
+  }, [initialClients, sortBy, filterStatus]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -88,6 +112,32 @@ export function ClientList({ initialClients }: { initialClients: ClientType[] })
           />
         </form>
 
+        <div className="flex items-center gap-2 flex-wrap">
+          <Select value={filterStatus} onValueChange={setFilterStatus}>
+            <SelectTrigger className="w-[140px] h-9">
+              <SelectValue placeholder="Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All Statuses</SelectItem>
+              <SelectItem value="ACTIVE">Active</SelectItem>
+              <SelectItem value="INACTIVE">Inactive</SelectItem>
+              <SelectItem value="BLACKLISTED">Blacklisted</SelectItem>
+            </SelectContent>
+          </Select>
+          
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-[160px] h-9">
+              <SelectValue placeholder="Sort By" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="NEWEST">Newest First</SelectItem>
+              <SelectItem value="OLDEST">Oldest First</SelectItem>
+              <SelectItem value="COMPANY_ASC">Company A-Z</SelectItem>
+              <SelectItem value="COMPANY_DESC">Company Z-A</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
         <Dialog open={isDialogOpen} onOpenChange={(open) => {
           setIsDialogOpen(open);
           if (!open) setEditingClient(null);
@@ -121,11 +171,11 @@ export function ClientList({ initialClients }: { initialClients: ClientType[] })
             </tr>
           </thead>
           <tbody>
-            {initialClients.length === 0 ? (
+            {filteredAndSortedClients.length === 0 ? (
               <tr>
                 <td colSpan={4} className="p-8 text-center text-zinc-500">No clients found.</td>
               </tr>
-            ) : initialClients.map((client) => (
+            ) : filteredAndSortedClients.map((client) => (
               <tr key={client.id} className="border-b border-zinc-100 dark:border-zinc-800 hover:bg-zinc-50/50 dark:hover:bg-zinc-800/50 transition-colors cursor-pointer" onClick={() => openEdit(client)}>
                 <td className="p-4">
                   <div className="font-medium text-zinc-900 dark:text-zinc-50">{client.companyName}</div>
@@ -168,13 +218,12 @@ export function ClientList({ initialClients }: { initialClients: ClientType[] })
 
       {/* Mobile Card View */}
       <div className="grid grid-cols-1 gap-4 md:hidden">
-        {initialClients.length === 0 ? (
-          <div className="p-8 text-center text-zinc-500 border border-zinc-200 dark:border-zinc-800 rounded-lg">
+        {filteredAndSortedClients.length === 0 ? (
+          <div className="p-8 text-center text-zinc-500 bg-white dark:bg-zinc-900 rounded-md border border-zinc-200 dark:border-zinc-800">
             No clients found.
           </div>
-        ) : initialClients.map((client) => (
-          <Card key={client.id} className="overflow-hidden">
-            <CardContent className="p-4">
+        ) : filteredAndSortedClients.map((client) => (
+          <div key={client.id} className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg p-4 space-y-4">
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <h3 className="font-semibold text-lg">{client.companyName}</h3>
@@ -221,8 +270,7 @@ export function ClientList({ initialClients }: { initialClients: ClientType[] })
                   {client.region?.name || client.address || 'No location'}
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </div>
         ))}
       </div>
     </div>

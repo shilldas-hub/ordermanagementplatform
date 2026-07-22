@@ -168,6 +168,15 @@ export function LeadDetails({ lead, stages = [], clients = [], users = [], regio
                 <p className="text-zinc-700 dark:text-zinc-300">{lead.description}</p>
               </div>
             )}
+
+            <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 text-xs text-zinc-500 space-y-1">
+              {lead.createdAt && (
+                <div>Created: {format(new Date(lead.createdAt), "MMM d, yyyy h:mm a")}</div>
+              )}
+              {lead.updatedAt && (
+                <div>Last Modified: {format(new Date(lead.updatedAt), "MMM d, yyyy h:mm a")}</div>
+              )}
+            </div>
           </CardContent>
         </Card>
       </div>

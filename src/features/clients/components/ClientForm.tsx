@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { useForm } from 'react-hook-form';
+import { format } from 'date-fns';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { clientSchema, ClientFormValues } from '../schema';
 import { Button } from '@/components/ui/button';
@@ -15,9 +16,10 @@ import {
   FormLabel,
   FormMessage,
 } from '@/components/ui/form';
+import { ActivityTimeline } from '@/features/activities/components/ActivityTimeline';
 
 interface ClientFormProps {
-  initialData?: Partial<ClientFormValues>;
+  initialData?: Partial<ClientFormValues> & { id?: string, createdAt?: Date | string, updatedAt?: Date | string };
   onSubmit: (data: ClientFormValues) => void;
   isLoading?: boolean;
 }
@@ -39,9 +41,11 @@ export function ClientForm({ initialData, onSubmit, isLoading }: ClientFormProps
   });
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+    <div className="flex flex-col gap-8 max-w-4xl">
+      <div>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
             name="companyName"
@@ -150,15 +154,30 @@ export function ClientForm({ initialData, onSubmit, isLoading }: ClientFormProps
           )}
         />
 
-        <div className="flex justify-end gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
-          <Button type="button" variant="outline" disabled={isLoading} onClick={() => form.reset()}>
-            Reset
-          </Button>
-          <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Saving..." : "Save Client"}
-          </Button>
+        <div className="flex flex-col sm:flex-row justify-between items-center gap-3 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+          <div className="text-xs text-zinc-500 w-full sm:w-auto text-left">
+            {initialData?.createdAt && (
+              <span>Created: {format(new Date(initialData.createdAt), "MMM d, yyyy h:mm a")}</span>
+            )}
+            {initialData?.updatedAt && (
+              <span className="ml-3">Modified: {format(new Date(initialData.updatedAt), "MMM d, yyyy h:mm a")}</span>
+            )}
+          </div>
+          <div className="flex justify-end gap-4 pt-4 border-t border-zinc-200 dark:border-zinc-800">
+            <Button type="submit" disabled={isLoading}>
+              {isLoading ? 'Saving...' : initialData?.id ? 'Update Client' : 'Create Client'}
+            </Button>
+          </div>
         </div>
       </form>
     </Form>
+      </div>
+
+      {initialData?.id && (
+        <div className="h-[500px]">
+          <ActivityTimeline targetId={initialData.id} type="client" />
+        </div>
+      )}
+    </div>
   );
 }

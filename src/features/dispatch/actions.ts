@@ -33,7 +33,7 @@ export async function getDispatchOrders() {
   });
 }
 
-export async function updateOrderStatus(orderId: string, status: OrderStatus, note?: string) {
+export async function updateOrderStatus(orderId: string, status: OrderStatus, note?: string, expectedLeadTime?: string) {
   const user = await getCurrentUser();
   if (!user || (user.role !== "DISPATCH" && user.role !== "SUPER_ADMIN")) {
     throw new Error("Unauthorized");
@@ -60,7 +60,8 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus, no
     await prisma.purchaseRequest.create({
       data: {
         orderId: order.id,
-        status: "PENDING"
+        status: "PENDING",
+        expectedLeadTime: expectedLeadTime || null
       }
     });
     
@@ -69,7 +70,7 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus, no
       await prisma.notification.create({
         data: {
           userId: order.assignedToId,
-          message: `Order ${order.orderNumber} is BACKORDERED. Purchase Request initiated.`
+          message: `Order ${order.orderNumber} is BACKORDERED${expectedLeadTime ? ` (Expected Lead Time: ${expectedLeadTime})` : ''}. Purchase Request initiated.`
         }
       });
     }

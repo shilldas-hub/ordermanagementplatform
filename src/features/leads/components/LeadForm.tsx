@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Loader2 } from "lucide-react";
+import { ActivityTimeline } from "@/features/activities/components/ActivityTimeline";
 
 
 interface LeadFormProps {
@@ -55,13 +56,15 @@ export function LeadForm({ initialData, onSubmit, clients, stages, users, region
   };
 
   return (
-    <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-        {error && (
-          <div className="p-3 text-sm rounded-md bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-400">
-            {error}
-          </div>
-        )}
+    <div className={`grid grid-cols-1 ${initialData?.id ? 'xl:grid-cols-3 gap-6' : 'max-w-4xl'}`}>
+      <div className={initialData?.id ? "xl:col-span-2" : ""}>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
+            {error && (
+              <div className="p-3 text-sm rounded-md bg-red-50 text-red-600 dark:bg-red-950/50 dark:text-red-400">
+                {error}
+              </div>
+            )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
@@ -87,7 +90,9 @@ export function LeadForm({ initialData, onSubmit, clients, stages, users, region
                 <Select onValueChange={field.onChange} value={field.value || ""}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select client" />
+                      <SelectValue placeholder="Select client">
+                        {field.value ? clients.find(c => c.id === field.value)?.companyName : "Select client"}
+                      </SelectValue>
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -112,7 +117,9 @@ export function LeadForm({ initialData, onSubmit, clients, stages, users, region
                 <Select onValueChange={field.onChange} value={field.value || ""}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select stage" />
+                      <SelectValue placeholder="Select stage">
+                        {field.value ? stages.find(s => s.id === field.value)?.name : "Select stage"}
+                      </SelectValue>
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -204,7 +211,9 @@ export function LeadForm({ initialData, onSubmit, clients, stages, users, region
                 <Select onValueChange={field.onChange} value={field.value || ""}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Unassigned" />
+                      <SelectValue placeholder="Unassigned">
+                        {field.value === "unassigned" || !field.value ? "Unassigned" : users.find(u => u.id === field.value)?.name || 'Unknown User'}
+                      </SelectValue>
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -230,7 +239,9 @@ export function LeadForm({ initialData, onSubmit, clients, stages, users, region
                 <Select onValueChange={field.onChange} value={field.value || ""}>
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select Region" />
+                      <SelectValue placeholder="Select Region">
+                        {field.value === "none" || !field.value ? "None" : regions.find(r => r.id === field.value)?.name || 'Select Region'}
+                      </SelectValue>
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
@@ -274,7 +285,15 @@ export function LeadForm({ initialData, onSubmit, clients, stages, users, region
             {initialData?.id ? 'Update Lead' : 'Create Lead'}
           </Button>
         </div>
-      </form>
-    </Form>
+        </form>
+      </Form>
+      </div>
+
+      {initialData?.id && (
+        <div className="xl:col-span-1 h-[600px] xl:h-auto">
+          <ActivityTimeline targetId={initialData.id} type="lead" />
+        </div>
+      )}
+    </div>
   );
 }

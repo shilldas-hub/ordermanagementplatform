@@ -6,6 +6,231 @@ datasource db {
   provider = "postgresql"
 }
 
+model User {
+  id                String         @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email             String         @unique
+  name              String?
+  role              Role           @default(SALES_EXECUTIVE)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  deletedAt         DateTime?
+  regionId          String?        @db.Uuid
+  createdActivities Activity[]     @relation("ActivityCreator")
+  updatedActivities Activity[]     @relation("ActivityUpdater")
+  assignedClients   Client[]       @relation("ClientAssignee")
+  createdClients    Client[]       @relation("ClientCreator")
+  updatedClients    Client[]       @relation("ClientUpdater")
+  assignedLeads     Lead[]         @relation("LeadAssignee")
+  createdLeads      Lead[]         @relation("LeadCreator")
+  updatedLeads      Lead[]         @relation("LeadUpdater")
+  notifications     Notification[]
+  assignedOrders    Order[]        @relation("OrderAssignee")
+  createdOrders     Order[]        @relation("OrderCreator")
+  updatedOrders     Order[]        @relation("OrderUpdater")
+  region            Region?        @relation(fields: [regionId], references: [id])
+}
+
+model Region {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String    @unique
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  clients   Client[]
+  leads     Lead[]
+  users     User[]
+}
+
+model Client {
+  id             String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  email          String?
+  phone          String?
+  address        String?
+  regionId       String?         @db.Uuid
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  assignedToId   String?         @db.Uuid
+  companyName    String
+  contactPerson  String?
+  createdById    String?         @db.Uuid
+  deletedAt      DateTime?
+  gstNumber      String?         @unique
+  paymentTerms   String?
+  status         ClientStatus    @default(ACTIVE)
+  updatedById    String?         @db.Uuid
+  activities     Activity[]
+  assignedTo     User?           @relation("ClientAssignee", fields: [assignedToId], references: [id])
+  createdBy      User?           @relation("ClientCreator", fields: [createdById], references: [id])
+  region         Region?         @relation(fields: [regionId], references: [id])
+  updatedBy      User?           @relation("ClientUpdater", fields: [updatedById], references: [id])
+  clientMappings ClientMapping[]
+  leads          Lead[]
+  orders         Order[]
+}
+
+model PipelineStage {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name      String    @unique
+  order     Int       @default(0)
+  color     String?
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  leads     Lead[]
+}
+
+model Lead {
+  id                  String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  title               String
+  expectedValue       Float?
+  clientId            String        @db.Uuid
+  assignedToId        String?       @db.Uuid
+  stageId             String        @db.Uuid
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+  createdById         String?       @db.Uuid
+  deletedAt           DateTime?
+  updatedById         String?       @db.Uuid
+  description         String?
+  expectedClosingDate DateTime?
+  priority            LeadPriority  @default(MEDIUM)
+  regionId            String?       @db.Uuid
+  source              LeadSource    @default(OTHER)
+  activities          Activity[]
+  assignedTo          User?         @relation("LeadAssignee", fields: [assignedToId], references: [id])
+  client              Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdBy           User?         @relation("LeadCreator", fields: [createdById], references: [id])
+  region              Region?       @relation(fields: [regionId], references: [id])
+  stage               PipelineStage @relation(fields: [stageId], references: [id])
+  updatedBy           User?         @relation("LeadUpdater", fields: [updatedById], references: [id])
+  orders              Order[]
+}
+
+model Order {
+  id               String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderNumber      String            @unique @default(dbgenerated("substr(md5((random())::text), 0, 8)"))
+  totalAmount      Float
+  status           OrderStatus       @default(PENDING)
+  leadId           String?           @db.Uuid
+  clientId         String            @db.Uuid
+  assignedToId     String?           @db.Uuid
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  createdById      String?           @db.Uuid
+  deletedAt        DateTime?
+  updatedById      String?           @db.Uuid
+  activities       Activity[]
+  assignedTo       User?             @relation("OrderAssignee", fields: [assignedToId], references: [id])
+  client           Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdBy        User?             @relation("OrderCreator", fields: [createdById], references: [id])
+  lead             Lead?             @relation(fields: [leadId], references: [id])
+  updatedBy        User?             @relation("OrderUpdater", fields: [updatedById], references: [id])
+  purchaseRequests PurchaseRequest[]
+  items            OrderItem[]
+}
+
+model OrderItem {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId   String   @db.Uuid
+  productId String   @db.Uuid
+  quantity  Int
+  price     Float    // Locked price at the time of order creation
+  order     Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id])
+}
+
+model Activity {
+  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  type        ActivityType @default(NOTE)
+  description String
+  createdById String       @db.Uuid
+  clientId    String?      @db.Uuid
+  leadId      String?      @db.Uuid
+  orderId     String?      @db.Uuid
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  deletedAt   DateTime?
+  updatedById String?      @db.Uuid
+  client      Client?      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  createdBy   User         @relation("ActivityCreator", fields: [createdById], references: [id], onDelete: Cascade)
+  lead        Lead?        @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  order       Order?       @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  updatedBy   User?        @relation("ActivityUpdater", fields: [updatedById], references: [id])
+  attachments Attachment[]
+}
+
+model Notification {
+  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId    String    @db.Uuid
+  message   String
+  isRead    Boolean   @default(false)
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Attachment {
+  id         String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  fileName   String
+  fileUrl    String
+  fileType   String?
+  activityId String?   @db.Uuid
+  createdAt  DateTime  @default(now())
+  activity   Activity? @relation(fields: [activityId], references: [id], onDelete: Cascade)
+}
+
+model PurchaseRequest {
+  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  orderId          String   @db.Uuid
+  expectedLeadTime String?
+  status           String   @default("PENDING")
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  order            Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+}
+
+model ClientMapping {
+  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  spectrumClientId String
+  sourceLocation   String
+  sourceName       String?
+  rawData          Json?
+  unifiedClientId  String?       @db.Uuid
+  status           MappingStatus @default(PENDING)
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  client           Client?       @relation(fields: [unifiedClientId], references: [id])
+
+  @@unique([spectrumClientId, sourceLocation])
+}
+
+model SkuMapping {
+  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  spectrumSku    String
+  sourceLocation String
+  sourceName     String?
+  rawData        Json?
+  unifiedSku     String?
+  status         MappingStatus @default(PENDING)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
+
+  @@unique([spectrumSku, sourceLocation])
+}
+
+model FinancialRecord {
+  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  location  String
+  period    DateTime @db.Date
+  revenue   Float
+  expenses  Float
+  profit    Float
+  source    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 enum Role {
   SUPER_ADMIN
   REGIONAL_MANAGER
@@ -16,15 +241,15 @@ enum Role {
 
 enum OrderStatus {
   PENDING
-  PENDING_ACCOUNT_CREATION
-  PENDING_DISPATCH_REVIEW
   PRODUCTION
   READY
-  READY_FOR_DISPATCH
-  BACKORDERED
   DISPATCHED
   DELIVERED
   CANCELLED
+  PENDING_ACCOUNT_CREATION
+  PENDING_DISPATCH_REVIEW
+  READY_FOR_DISPATCH
+  BACKORDERED
 }
 
 enum ActivityType {
@@ -47,90 +272,6 @@ enum MappingStatus {
   IGNORED
 }
 
-model User {
-  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  email     String    @unique
-  name      String?
-  role      Role      @default(SALES_EXECUTIVE)
-  regionId  String?   @db.Uuid
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  region Region? @relation(fields: [regionId], references: [id])
-
-  // Audit and Assignment relations
-  createdClients  Client[] @relation("ClientCreator")
-  updatedClients  Client[] @relation("ClientUpdater")
-  assignedClients Client[] @relation("ClientAssignee")
-
-  createdLeads  Lead[] @relation("LeadCreator")
-  updatedLeads  Lead[] @relation("LeadUpdater")
-  assignedLeads Lead[] @relation("LeadAssignee")
-
-  createdOrders  Order[] @relation("OrderCreator")
-  updatedOrders  Order[] @relation("OrderUpdater")
-  assignedOrders Order[] @relation("OrderAssignee")
-
-  createdActivities Activity[] @relation("ActivityCreator")
-  updatedActivities Activity[] @relation("ActivityUpdater")
-
-  notifications Notification[]
-}
-
-model Region {
-  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String    @unique
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  users   User[]
-  clients Client[]
-  leads   Lead[]
-}
-
-model Client {
-  id            String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  companyName   String
-  contactPerson String?
-  email         String?
-  phone         String?
-  gstNumber     String?      @unique
-  address       String?
-  regionId      String?      @db.Uuid
-  paymentTerms  String?
-  status        ClientStatus @default(ACTIVE)
-  assignedToId  String?      @db.Uuid
-  createdById   String?      @db.Uuid
-  updatedById   String?      @db.Uuid
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
-  deletedAt     DateTime?
-
-  region     Region? @relation(fields: [regionId], references: [id])
-  assignedTo User?   @relation("ClientAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
-  createdBy  User?   @relation("ClientCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy  User?   @relation("ClientUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
-
-  leads      Lead[]
-  orders     Order[]
-  activities Activity[]
-  clientMappings ClientMapping[]
-}
-
-model PipelineStage {
-  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  name      String    @unique
-  order     Int       @default(0)
-  color     String?
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  leads Lead[]
-}
-
 enum LeadPriority {
   LOW
   MEDIUM
@@ -145,150 +286,15 @@ enum LeadSource {
   OTHER
 }
 
-model Lead {
-  id                  String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  title               String
-  expectedValue       Float?
-  priority            LeadPriority @default(MEDIUM)
-  source              LeadSource   @default(OTHER)
-  expectedClosingDate DateTime?
-  description         String?      @db.Text
-  clientId            String       @db.Uuid
-  assignedToId        String?      @db.Uuid
-  regionId            String?      @db.Uuid
-  stageId             String       @db.Uuid
-  createdById         String?      @db.Uuid
-  updatedById         String?      @db.Uuid
-  createdAt           DateTime     @default(now())
-  updatedAt           DateTime     @updatedAt
-  deletedAt           DateTime?
-
-  client     Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  assignedTo User?         @relation("LeadAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
-  region     Region?       @relation(fields: [regionId], references: [id], onDelete: SetNull)
-  createdBy  User?         @relation("LeadCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy  User?         @relation("LeadUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
-  stage      PipelineStage @relation(fields: [stageId], references: [id], onDelete: Restrict)
-
-  orders     Order[]
-  activities Activity[]
-}
-
-model Order {
-  id           String      @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  orderNumber  String      @unique @default(dbgenerated("substr(md5(random()::text), 0, 8)"))
-  totalAmount  Float
-  status       OrderStatus @default(PENDING)
-  leadId       String?     @db.Uuid
-  clientId     String      @db.Uuid
-  assignedToId String?     @db.Uuid
-  createdById  String?     @db.Uuid
-  updatedById  String?     @db.Uuid
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
-  deletedAt    DateTime?
-
-  lead       Lead?  @relation(fields: [leadId], references: [id], onDelete: SetNull)
-  client     Client @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  assignedTo User?  @relation("OrderAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
-  createdBy  User?  @relation("OrderCreator", fields: [createdById], references: [id], onDelete: SetNull)
-  updatedBy  User?  @relation("OrderUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
-
-  activities Activity[]
-  purchaseRequests PurchaseRequest[]
-}
-
-model Activity {
-  id          String       @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  type        ActivityType @default(NOTE)
-  description String
-  clientId    String?      @db.Uuid
-  leadId      String?      @db.Uuid
-  orderId     String?      @db.Uuid
-  createdById String       @db.Uuid
-  updatedById String?      @db.Uuid
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+model Product {
+  id          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  name        String
+  category    String
+  useCase     String?
+  description String?
+  price       Float     @default(0)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
   deletedAt   DateTime?
-
-  client Client? @relation(fields: [clientId], references: [id], onDelete: Cascade)
-  lead   Lead?   @relation(fields: [leadId], references: [id], onDelete: Cascade)
-  order  Order?  @relation(fields: [orderId], references: [id], onDelete: Cascade)
-
-  createdBy User  @relation("ActivityCreator", fields: [createdById], references: [id], onDelete: Cascade)
-  updatedBy User? @relation("ActivityUpdater", fields: [updatedById], references: [id], onDelete: SetNull)
-
-  attachments Attachment[]
-}
-
-model Notification {
-  id        String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  userId    String    @db.Uuid
-  message   String
-  isRead    Boolean   @default(false)
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-  deletedAt DateTime?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model Attachment {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  fileName  String
-  fileUrl   String
-  fileType  String?
-  activityId String?  @db.Uuid
-  createdAt DateTime @default(now())
-
-  activity Activity? @relation(fields: [activityId], references: [id], onDelete: Cascade)
-}
-
-model PurchaseRequest {
-  id               String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  orderId          String   @db.Uuid
-  expectedLeadTime String?
-  status           String   @default("PENDING")
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
-
-  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
-}
-
-model ClientMapping {
-  id               String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  spectrumClientId String
-  sourceLocation   String
-  unifiedClientId  String?       @db.Uuid
-  status           MappingStatus @default(PENDING)
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
-
-  client Client? @relation(fields: [unifiedClientId], references: [id], onDelete: SetNull)
-
-  @@unique([spectrumClientId, sourceLocation])
-}
-
-model SkuMapping {
-  id             String        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  spectrumSku    String
-  sourceLocation String
-  unifiedSku     String?
-  status         MappingStatus @default(PENDING)
-  createdAt      DateTime      @default(now())
-  updatedAt      DateTime      @updatedAt
-
-  @@unique([spectrumSku, sourceLocation])
-}
-
-model FinancialRecord {
-  id        String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  location  String
-  period    DateTime @db.Date
-  revenue   Float
-  expenses  Float
-  profit    Float
-  source    String   
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  orderItems  OrderItem[]
 }

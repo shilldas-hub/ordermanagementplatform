@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from 'react';
+import { format } from 'date-fns';
 import { updateOrderStatus } from '../actions';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -8,22 +9,49 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Clock, Truck, AlertTriangle, CheckCircle, Package } from 'lucide-react';
 
 export function DispatchDashboard({ initialOrders }: { initialOrders: any[] }) {
   const [orders, setOrders] = useState(initialOrders);
   const [selectedOrder, setSelectedOrder] = useState<any | null>(null);
   const [note, setNote] = useState("");
+  const [leadTime, setLeadTime] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+
+  const [sortBy, setSortBy] = useState("NEWEST");
+  const [filterStatus, setFilterStatus] = useState("ALL");
+
+  const filteredAndSortedOrders = React.useMemo(() => {
+    let result = [...orders];
+    if (filterStatus !== "ALL") {
+      result = result.filter(o => o.status === filterStatus);
+    }
+    result.sort((a, b) => {
+      if (sortBy === "AMOUNT_DESC") return (b.totalAmount || 0) - (a.totalAmount || 0);
+      if (sortBy === "AMOUNT_ASC") return (a.totalAmount || 0) - (b.totalAmount || 0);
+      if (sortBy === "NEWEST") return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+      if (sortBy === "OLDEST") return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+      return 0;
+    });
+    return result;
+  }, [orders, sortBy, filterStatus]);
 
   const handleStatusUpdate = async (status: any) => {
     if (!selectedOrder) return;
     setIsLoading(true);
-    const res = await updateOrderStatus(selectedOrder.id, status, note);
+    const res = await updateOrderStatus(selectedOrder.id, status, note, status === 'BACKORDERED' ? leadTime : undefined);
     if (res.success && res.order) {
       setOrders(orders.map(o => o.id === selectedOrder.id ? { ...o, status: res.order.status } : o));
       setSelectedOrder(null);
       setNote("");
+      setLeadTime("");
     }
     setIsLoading(false);
   };
@@ -54,6 +82,33 @@ export function DispatchDashboard({ initialOrders }: { initialOrders: any[] }) {
         ))}
       </div>
 
+      <div className="flex items-center gap-2 flex-wrap mb-4">
+        <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <SelectTrigger className="w-[200px] h-9 bg-white dark:bg-zinc-900">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ALL">All Statuses</SelectItem>
+            <SelectItem value="PENDING_ACCOUNT_CREATION">Pending Account Creation</SelectItem>
+            <SelectItem value="PENDING_DISPATCH_REVIEW">Pending Dispatch Review</SelectItem>
+            <SelectItem value="READY_FOR_DISPATCH">Ready For Dispatch</SelectItem>
+            <SelectItem value="BACKORDERED">Backordered</SelectItem>
+          </SelectContent>
+        </Select>
+        
+        <Select value={sortBy} onValueChange={setSortBy}>
+          <SelectTrigger className="w-[160px] h-9 bg-white dark:bg-zinc-900">
+            <SelectValue placeholder="Sort By" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="NEWEST">Newest First</SelectItem>
+            <SelectItem value="OLDEST">Oldest First</SelectItem>
+            <SelectItem value="AMOUNT_DESC">Highest Amount</SelectItem>
+            <SelectItem value="AMOUNT_ASC">Lowest Amount</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
       <div className="bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-lg shadow-sm overflow-hidden">
         <table className="w-full text-sm text-left">
           <thead className="bg-zinc-50 dark:bg-zinc-800/50 text-zinc-500 border-b border-zinc-200 dark:border-zinc-800">
@@ -66,7 +121,7 @@ export function DispatchDashboard({ initialOrders }: { initialOrders: any[] }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-zinc-200 dark:divide-zinc-800">
-            {orders.map((order) => (
+            {filteredAndSortedOrders.map((order) => (
               <tr key={order.id} className="hover:bg-zinc-50 dark:hover:bg-zinc-800/50 cursor-pointer" onClick={() => setSelectedOrder(order)}>
                 <td className="p-4 font-medium">{order.orderNumber}</td>
                 <td className="p-4">{order.client.companyName}</td>
@@ -84,7 +139,7 @@ export function DispatchDashboard({ initialOrders }: { initialOrders: any[] }) {
                 </td>
               </tr>
             ))}
-            {orders.length === 0 && (
+            {filteredAndSortedOrders.length === 0 && (
               <tr>
                 <td colSpan={5} className="p-8 text-center text-zinc-500">No active dispatch orders.</td>
               </tr>
@@ -120,6 +175,20 @@ export function DispatchDashboard({ initialOrders }: { initialOrders: any[] }) {
                 />
               </div>
 
+              {selectedOrder.status === 'PENDING_DISPATCH_REVIEW' && (
+                <div className="space-y-3">
+                  <label className="text-sm font-medium">Expected Lead Time (Required for Backorder)</label>
+                  <Input 
+                    placeholder="e.g., 2 Weeks, Next Tuesday..." 
+                    value={leadTime}
+                    onChange={(e) => setLeadTime(e.target.value)}
+                  />
+                  <p className="text-xs text-zinc-500">
+                    If marked as backordered, the Sales Executive will be notified with this lead time.
+                  </p>
+                </div>
+              )}
+
               <div className="flex flex-wrap gap-2 pt-2">
                 {selectedOrder.status === 'PENDING_ACCOUNT_CREATION' && (
                   <Button onClick={() => handleStatusUpdate('PENDING_DISPATCH_REVIEW')} disabled={isLoading} className="w-full sm:w-auto">
@@ -131,10 +200,20 @@ export function DispatchDashboard({ initialOrders }: { initialOrders: any[] }) {
                     <Button onClick={() => handleStatusUpdate('READY_FOR_DISPATCH')} disabled={isLoading} className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white">
                       Ready for Dispatch
                     </Button>
-                    <Button onClick={() => handleStatusUpdate('BACKORDERED')} disabled={isLoading} variant="destructive" className="w-full sm:w-auto">
+                    <Button onClick={() => handleStatusUpdate('BACKORDERED')} disabled={isLoading || !leadTime} variant="destructive" className="w-full sm:w-auto">
                       Mark as Backordered
                     </Button>
                   </>
+                )}
+
+              </div>
+
+              <div className="pt-4 border-t border-zinc-100 dark:border-zinc-800 text-xs text-zinc-500 flex flex-col sm:flex-row justify-between">
+                {selectedOrder.createdAt && (
+                  <span>Created: {format(new Date(selectedOrder.createdAt), "MMM d, yyyy h:mm a")}</span>
+                )}
+                {selectedOrder.updatedAt && (
+                  <span>Last Modified: {format(new Date(selectedOrder.updatedAt), "MMM d, yyyy h:mm a")}</span>
                 )}
               </div>
             </div>

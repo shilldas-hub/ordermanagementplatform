@@ -10,7 +10,9 @@ import {
   ShoppingCart, 
   Truck, 
   BarChart3, 
-  Settings 
+  Settings,
+  Package,
+  Server
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -19,12 +21,18 @@ const navItems = [
   { name: 'Clients', href: '/clients', icon: Users },
   { name: 'Leads', href: '/leads', icon: Briefcase },
   { name: 'Orders', href: '/orders', icon: ShoppingCart },
+  { name: 'Products', href: '/products', icon: Package },
   { name: 'Dispatch', href: '/dispatch', icon: Truck },
   { name: 'Reports', href: '/reports', icon: BarChart3 },
+  { name: 'Data Sync', href: '/data-sync', icon: Server },
   { name: 'Settings', href: '/settings', icon: Settings },
 ];
 
-export function Sidebar({ className }: { className?: string }) {
+interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {
+  user?: any;
+}
+
+export function Sidebar({ className, user, ...props }: SidebarProps) {
   const pathname = usePathname();
 
   return (
@@ -58,11 +66,11 @@ export function Sidebar({ className }: { className?: string }) {
       <div className="p-4 border-t border-zinc-200 dark:border-zinc-800">
         <div className="flex items-center gap-3 px-3 py-2">
           <div className="w-8 h-8 rounded-full bg-zinc-200 dark:bg-zinc-800 flex items-center justify-center text-sm font-medium">
-            JD
+            {user?.name?.substring(0, 2).toUpperCase() || "U"}
           </div>
           <div className="flex flex-col">
-            <span className="text-sm font-medium">John Doe</span>
-            <span className="text-xs text-zinc-500">Sales Executive</span>
+            <span className="text-sm font-medium">{user?.name || "Unknown User"}</span>
+            <span className="text-xs text-zinc-500">{user?.role?.replace(/_/g, ' ') || "No role"}</span>
           </div>
         </div>
       </div>

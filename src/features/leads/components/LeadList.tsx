@@ -9,6 +9,13 @@ import { Card, CardContent } from '@/components/ui/card';
 import { 
   DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger 
 } from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Search, Plus, MoreVertical, Edit, Trash2, Eye, Building2, MapPin, List, LayoutGrid } from 'lucide-react';
 import { LeadForm } from './LeadForm';
 import { LeadsKanban } from './LeadsKanban';
@@ -38,10 +45,23 @@ export function LeadList({ initialLeads, clients, stages, users, regions }: Lead
   const [editingLead, setEditingLead] = useState<any | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  const filteredLeads = leads.filter(l => 
-    l.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    l.client.companyName.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const [sortBy, setSortBy] = useState("NEWEST");
+  const [filterStage, setFilterStage] = useState("ALL");
+
+  const filteredLeads = leads.filter(l => {
+    const matchesSearch = l.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                          l.client.companyName.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStage = filterStage === "ALL" || l.stageId === filterStage;
+    return matchesSearch && matchesStage;
+  }).sort((a, b) => {
+    if (sortBy === "TITLE_ASC") return a.title.localeCompare(b.title);
+    if (sortBy === "TITLE_DESC") return b.title.localeCompare(a.title);
+    if (sortBy === "VALUE_DESC") return (b.expectedValue || 0) - (a.expectedValue || 0);
+    if (sortBy === "VALUE_ASC") return (a.expectedValue || 0) - (b.expectedValue || 0);
+    if (sortBy === "NEWEST") return new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime();
+    if (sortBy === "OLDEST") return new Date(a.createdAt || 0).getTime() - new Date(b.createdAt || 0).getTime();
+    return 0;
+  });
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -103,6 +123,34 @@ export function LeadList({ initialLeads, clients, stages, users, regions }: Lead
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </form>
+
+        <div className="flex items-center gap-2 flex-wrap">
+          <Select value={filterStage} onValueChange={setFilterStage}>
+            <SelectTrigger className="w-[140px] h-9">
+              <SelectValue placeholder="Stage" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All Stages</SelectItem>
+              {stages.map((stage) => (
+                <SelectItem key={stage.id} value={stage.id}>{stage.name}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          
+          <Select value={sortBy} onValueChange={setSortBy}>
+            <SelectTrigger className="w-[160px] h-9">
+              <SelectValue placeholder="Sort By" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="NEWEST">Newest First</SelectItem>
+              <SelectItem value="OLDEST">Oldest First</SelectItem>
+              <SelectItem value="VALUE_DESC">Highest Value</SelectItem>
+              <SelectItem value="VALUE_ASC">Lowest Value</SelectItem>
+              <SelectItem value="TITLE_ASC">Title A-Z</SelectItem>
+              <SelectItem value="TITLE_DESC">Title Z-A</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
 
           <div className="flex bg-zinc-100 dark:bg-zinc-800 p-1 rounded-md">
             <button

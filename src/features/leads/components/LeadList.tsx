@@ -125,7 +125,7 @@ export function LeadList({ initialLeads, clients, stages, users, regions }: Lead
         </form>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <Select value={filterStage} onValueChange={setFilterStage}>
+          <Select value={filterStage} onValueChange={(val) => setFilterStage(val || "")}>
             <SelectTrigger className="w-[140px] h-9">
               <SelectValue placeholder="Stage" />
             </SelectTrigger>
@@ -137,7 +137,7 @@ export function LeadList({ initialLeads, clients, stages, users, regions }: Lead
             </SelectContent>
           </Select>
           
-          <Select value={sortBy} onValueChange={setSortBy}>
+          <Select value={sortBy} onValueChange={(val) => setSortBy(val || "")}>
             <SelectTrigger className="w-[160px] h-9">
               <SelectValue placeholder="Sort By" />
             </SelectTrigger>

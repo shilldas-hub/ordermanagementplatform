@@ -113,7 +113,7 @@ export function ClientList({ initialClients }: { initialClients: ClientType[] })
         </form>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <Select value={filterStatus} onValueChange={(val) => setFilterStatus(val || 'ALL')}>
             <SelectTrigger className="w-[140px] h-9">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -125,7 +125,7 @@ export function ClientList({ initialClients }: { initialClients: ClientType[] })
             </SelectContent>
           </Select>
           
-          <Select value={sortBy} onValueChange={setSortBy}>
+          <Select value={sortBy} onValueChange={(val) => setSortBy(val || 'recent')}>
             <SelectTrigger className="w-[160px] h-9">
               <SelectValue placeholder="Sort By" />
             </SelectTrigger>

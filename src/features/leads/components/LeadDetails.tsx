@@ -190,7 +190,7 @@ export function LeadDetails({ lead, stages = [], clients = [], users = [], regio
           <CardContent className="space-y-4">
             <div className="flex gap-4">
               <div className="w-1/3">
-                <Select value={newActivityType} onValueChange={setNewActivityType}>
+                <Select value={newActivityType} onValueChange={(val) => setNewActivityType(val || "")}>
                   <SelectTrigger>
                     <SelectValue placeholder="Activity Type" />
                   </SelectTrigger>

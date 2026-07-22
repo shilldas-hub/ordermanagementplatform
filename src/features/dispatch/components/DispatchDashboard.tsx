@@ -83,7 +83,7 @@ export function DispatchDashboard({ initialOrders }: { initialOrders: any[] }) {
       </div>
 
       <div className="flex items-center gap-2 flex-wrap mb-4">
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
+        <Select value={filterStatus} onValueChange={(val) => setFilterStatus(val || "")}>
           <SelectTrigger className="w-[200px] h-9 bg-white dark:bg-zinc-900">
             <SelectValue placeholder="Status" />
           </SelectTrigger>
@@ -96,7 +96,7 @@ export function DispatchDashboard({ initialOrders }: { initialOrders: any[] }) {
           </SelectContent>
         </Select>
         
-        <Select value={sortBy} onValueChange={setSortBy}>
+        <Select value={sortBy} onValueChange={(val) => setSortBy(val || "")}>
           <SelectTrigger className="w-[160px] h-9 bg-white dark:bg-zinc-900">
             <SelectValue placeholder="Sort By" />
           </SelectTrigger>

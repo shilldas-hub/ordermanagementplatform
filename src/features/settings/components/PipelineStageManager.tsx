@@ -19,19 +19,19 @@ export function PipelineStageManager({ initialStages }: { initialStages: any[] }
 
   const handleAdd = async () => {
     if (!newName.trim()) return;
-    const res = await createPipelineStage(newName, newColor);
-    if (res.success && res.stage) {
-      setStages([...stages, res.stage]);
+    const res = await createPipelineStage(newName, stages.length + 1);
+    if ((res as any).stage) {
+      setStages([...stages, (res as any).stage]);
       setIsAdding(false);
       setNewName("");
     }
   };
 
-  const handleUpdate = async (id: string, color: string, order: number) => {
+  const handleUpdate = async (id: string, order: number) => {
     if (!editName.trim()) return;
-    const res = await updatePipelineStage(id, editName, color, order);
-    if (res.success && res.stage) {
-      setStages(stages.map(s => s.id === id ? res.stage : s));
+    const res = await updatePipelineStage(id, editName, order);
+    if ((res as any).stage) {
+      setStages(stages.map(s => s.id === id ? (res as any).stage : s));
       setEditingId(null);
     }
   };
@@ -67,7 +67,7 @@ export function PipelineStageManager({ initialStages }: { initialStages: any[] }
 
     // Persist changes
     for (const stage of newStages) {
-      await updatePipelineStage(stage.id, stage.name, stage.color || "blue", stage.order);
+      await updatePipelineStage(stage.id, stage.name, stage.order);
     }
   };
 
@@ -96,7 +96,7 @@ export function PipelineStageManager({ initialStages }: { initialStages: any[] }
                 {editingId === stage.id ? (
                   <div className="flex items-center gap-2">
                     <Input value={editName} onChange={(e) => setEditName(e.target.value)} className="h-8 w-40" />
-                    <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600" onClick={() => handleUpdate(stage.id, stage.color, stage.order)}>
+                    <Button size="icon" variant="ghost" className="h-8 w-8 text-green-600" onClick={() => handleUpdate(stage.id, stage.order)}>
                       <Check className="w-4 h-4" />
                     </Button>
                     <Button size="icon" variant="ghost" className="h-8 w-8 text-red-600" onClick={() => setEditingId(null)}>

@@ -117,7 +117,7 @@ export function FinancialDashboard({ records }: { records: FinancialRecord[] }) 
                 <XAxis dataKey="month" tickLine={false} axisLine={false} />
                 <YAxis tickFormatter={(val) => `₹${(val / 100000).toFixed(1)}L`} tickLine={false} axisLine={false} />
                 <Tooltip 
-                  formatter={(value: number) => `₹${value.toLocaleString('en-IN')}`}
+                  formatter={(value: any) => `₹${value.toLocaleString('en-IN')}`}
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 />
                 <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
@@ -151,7 +151,7 @@ export function FinancialDashboard({ records }: { records: FinancialRecord[] }) 
                   ))}
                 </Pie>
                 <Tooltip 
-                  formatter={(value: number) => `₹${value.toLocaleString('en-IN')}`} 
+                  formatter={(value: any) => `₹${value.toLocaleString('en-IN')}`} 
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 />
                 <Legend iconType="circle" />

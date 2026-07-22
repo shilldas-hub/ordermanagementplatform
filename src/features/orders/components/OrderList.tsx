@@ -67,16 +67,16 @@ export function OrderList({ initialOrders = [], clients = [], products = [] }: {
       res = await createOrder(data);
     }
     
-    if (res.success && res.order) {
+    if (res.success && (res as any).order) {
       if (editingOrder) {
-        setOrders(orders.map(o => o.id === res.order.id ? { ...o, ...res.order, client: clients.find(c => c.id === res.order.clientId) } : o));
+        setOrders(orders.map(o => o.id === (res as any).order.id ? { ...o, ...(res as any).order, client: clients.find(c => c.id === (res as any).order.clientId) } : o));
       } else {
-        setOrders([{ ...res.order, client: clients.find(c => c.id === res.order.clientId) }, ...orders]);
+        setOrders([{ ...(res as any).order, client: clients.find(c => c.id === (res as any).order.clientId) }, ...orders]);
       }
       setIsDialogOpen(false);
       setEditingOrder(null);
     } else {
-      setError(res.error || "An unknown error occurred.");
+      setError((res as any).error || "An unknown error occurred.");
     }
     setIsLoading(false);
   };
@@ -87,7 +87,7 @@ export function OrderList({ initialOrders = [], clients = [], products = [] }: {
         <h2 className="text-2xl font-bold tracking-tight">Orders</h2>
         
         <div className="flex items-center gap-2 flex-wrap">
-          <Select value={filterStatus} onValueChange={setFilterStatus}>
+          <Select value={filterStatus} onValueChange={(val) => setFilterStatus(val || "")}>
             <SelectTrigger className="w-[140px] h-9">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
@@ -99,7 +99,7 @@ export function OrderList({ initialOrders = [], clients = [], products = [] }: {
             </SelectContent>
           </Select>
           
-          <Select value={sortBy} onValueChange={setSortBy}>
+          <Select value={sortBy} onValueChange={(val) => setSortBy(val || "")}>
             <SelectTrigger className="w-[160px] h-9">
               <SelectValue placeholder="Sort By" />
             </SelectTrigger>

@@ -12,7 +12,7 @@ export default async function FinancialsPage() {
         <p className="text-sm text-zinc-500 dark:text-zinc-400">View synchronized location profit/loss data and add manual fallback records.</p>
       </div>
 
-      <FinancialDashboard initialRecords={records} />
+      <FinancialDashboard records={records} />
     </div>
   );
 }

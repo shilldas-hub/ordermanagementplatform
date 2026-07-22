@@ -64,7 +64,7 @@ export function ProductList({ initialProducts }: { initialProducts: any[] }) {
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          <Select value={filterCategory} onValueChange={setFilterCategory}>
+          <Select value={filterCategory} onValueChange={(val) => setFilterCategory(val || "")}>
             <SelectTrigger className="w-[200px] h-9 bg-white dark:bg-zinc-900">
               <SelectValue placeholder="Category" />
             </SelectTrigger>
@@ -76,7 +76,7 @@ export function ProductList({ initialProducts }: { initialProducts: any[] }) {
             </SelectContent>
           </Select>
           
-          <Select value={sortBy} onValueChange={setSortBy}>
+          <Select value={sortBy} onValueChange={(val) => setSortBy(val || "")}>
             <SelectTrigger className="w-[160px] h-9 bg-white dark:bg-zinc-900">
               <SelectValue placeholder="Sort By" />
             </SelectTrigger>

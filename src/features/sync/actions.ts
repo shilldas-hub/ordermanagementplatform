@@ -50,7 +50,7 @@ export async function createUnifiedClientFromMapping(mappingId: string) {
     // First ensure region exists based on sourceLocation
     let region = await prisma.region.findFirst({ where: { name: mapping.sourceLocation } });
     if (!region) {
-      region = await prisma.region.create({ data: { name: mapping.sourceLocation, code: mapping.sourceLocation.substring(0, 3).toUpperCase() } });
+      region = await prisma.region.create({ data: { name: mapping.sourceLocation } });
     }
 
     const newClient = await prisma.client.create({

@@ -58,7 +58,7 @@ export function ManualFallbackForm({ onSuccess }: { onSuccess?: () => void }) {
         form.reset();
         if (onSuccess) onSuccess();
       } else {
-        setError(res.error || "Failed to add record");
+        setError((res as any).error || "Failed to add record");
       }
     } catch (err: any) {
       setError(err.message);
